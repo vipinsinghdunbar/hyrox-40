@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hyrox-40
+    runtime: static
+    buildCommand: node build.js
+    autoDeployTrigger: commit
+    staticPublishPath: ./dist
+    headers:
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /version.json
+        name: Cache-Control
+        value: no-store
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff

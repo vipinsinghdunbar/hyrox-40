@@ -1,0 +1,10 @@
+{
+  "name": "HYROX 40 — Train with purpose",
+  "short_name": "HYROX 40",
+  "description": "A focused five-day, 40-minute HYROX training companion.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8f8fb",
+  "theme_color": "#f8f8fb",
+  "icons": [{ "src": "icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }, { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }]
+}
