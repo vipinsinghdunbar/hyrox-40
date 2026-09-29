@@ -36,12 +36,16 @@ function boot(profile = null, logs = []) {
       removeItem() { stored = null; }
     },
     document: { getElementById(id) { return id === 'app' ? app : id === 'toast' ? toast : null; }, querySelector() { return { content: 'dev' }; }, querySelectorAll() { return []; } },
-    navigator: {}, window: { scrollTo() {} }, confirm() { return true; },
+    navigator: {}, window: { scrollTo() {}, location: { protocol: 'http:', pathname: '/', search: '' } }, confirm() { return true; },
     setInterval(fn) { callbacks.push(fn); return callbacks.length; },
     clearInterval() {}, setTimeout() { return 1; }, clearTimeout() {}, console
   };
   vm.createContext(ctx);
   vm.runInContext(script, ctx);
+  // Passkey-era gate: the app only renders training screens when a user is
+  // signed in. Simulate a signed-in athlete (harness stub, no app code touched)
+  // and re-render so the scenarios below run as they would after sign-in.
+  vm.runInContext('authUser={displayName:"Harness Athlete",roles:["athlete"],recoveryEmailVerified:true};render()', ctx);
   return { ctx, app, toast, callbacks, getStored: () => stored };
 }
 

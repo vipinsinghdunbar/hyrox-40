@@ -1,0 +1,18 @@
+{
+  "name": "hyrox-40",
+  "private": true,
+  "description": "HYROX 40 — a focused five-day, 40-minute HYROX training companion (mobile-first PWA).",
+  "scripts": {
+    "dev": "node tests/e2e/serve.js",
+    "build": "node build.js",
+    "start": "node server.js",
+    "test": "node qa_simulations.js",
+    "test:e2e": "playwright test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
