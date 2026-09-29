@@ -1,7 +1,0 @@
-{
-  "name": "hyrox40-local-v1",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Offline-first HYROX 40 timer engine and local PWA",
-  "scripts": { "test": "node --test tests/*.test.js", "serve": "python3 -m http.server 8080 --bind 0.0.0.0" }
-}

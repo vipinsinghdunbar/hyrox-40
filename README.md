@@ -1,38 +1,31 @@
-# HYROX 40 v1 — local timer prototype
+# HYROX 40
 
-A clean, separate v1 workspace for the guide's static, offline-first iPhone PWA direction. The earlier account/server project is untouched.
+A single-page, mobile-first HYROX training companion/PWA. The app uses plain HTML, CSS, and JavaScript; no package install is needed.
 
-## What's here
+## Run locally
 
-- `src/timer-engine.js` — pure timestamp-based session, segment, planned-rest and unplanned-rest state machine. No ticking counters are persisted.
-- `src/storage.js` — local IndexedDB repository, per-action undo snapshots, JSON backup import/export, and a persistent-storage request.
-- `src/app.js`, `src/app.css`, `index.html` — small timer-first interface; values entered on-device.
-- `hyrox40-plan-config.json` — editable draft transcribed from the supplied guide. It is explicitly marked pending coach review. The training-week structure and progression fields follow the guide's placeholders; unknown station loads, rest rules and derived targets are left blank. No target-generation engine is enabled.
-- `service-worker.js`, `manifest.webmanifest`, icons — install/offline shell assets.
-- `tests/` — dependency-free Node tests for timer transitions and elapsed-time recovery.
+Open `index.html` for the basic preview. For service-worker/update behavior, serve the folder over HTTPS or a local HTTP server.
 
-No goals questionnaire is present. No third-party scripts, analytics, account, remote database, or app-generated external requests are included.
+## Deploy to Render and connect GitHub
 
-## Run tests
+1. Push this project to a GitHub repository.
+2. In Render, choose **New → Blueprint**, connect that repository, and select `render.yaml`.
+3. Render builds the static PWA with `node build.js`; every build gets a content-based version ID for update checks.
+4. Keep automatic deploys enabled for the production branch. Each push then deploys the site.
+5. Use the resulting HTTPS `*.onrender.com` URL to install it on your phone.
 
-Requires Node.js 18 or newer:
+The installed app checks for a new deployment when opened, when it returns to the foreground, and every five minutes while visible. It shows an **Update ready** prompt; tapping **Refresh** loads the newest app. Navigation pages are network-first with an offline cached fallback.
+
+## Add it to a phone
+
+- **iPhone:** open the HTTPS Render URL in Safari → Share → **Add to Home Screen** → Add.
+- **Android:** open the HTTPS URL in Chrome → **Install app** (or menu → Add to Home screen).
+
+Keep the app online when you want to receive new versions. If it is already open during a deploy, the update prompt appears at the next check; the user can finish the current workout before refreshing.
+
+## QA
 
 ```sh
-npm test
+node qa_simulations.js
+node build.js
 ```
-
-## Preview locally
-
-For development only, serve this folder on localhost (service workers and IndexedDB require a secure context such as localhost or HTTPS):
-
-```sh
-npm run serve
-```
-
-Open `http://localhost:8080`. Static-host this folder for deployment; there is no app backend. A Render static-site Blueprint is included in `render.yaml` (no build output or app server is required).
-
-## Important limits before broader use
-
-The plan config is a **draft**, not coach approval or medical advice. The guide says its training numbers are placeholders pending qualified review. In particular, no race-standard sled/wall-ball loads or custom station choice for the mini-simulation are inferred here. Attach the original `hyrox40-plan-config.json` from the planning chat, or have a coach approve the values before implementing plan-derived targets/progression.
-
-Real-iPhone acceptance still required: install/add to Home Screen; screen-lock and wake-lock behavior; force-quit and resume; airplane-mode workout and save; export/import restore; safe-area and VoiceOver/tap-target review; verify IndexedDB persistence after OS eviction. The browser Wake Lock API can be unavailable or released by iOS, so it is not a guarantee against screen sleep.
