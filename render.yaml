@@ -1,45 +1,20 @@
 services:
-  # Keep the previously published static site online, but stop autodeploying
-  # the account-first UI to a host that cannot serve the same-origin API.
   - type: web
-    name: hyrox-40
+    name: hyrox40-v1
     runtime: static
-    buildCommand: npm ci && npm run build
-    autoDeployTrigger: "off"
-    staticPublishPath: ./dist
+    buildCommand: echo "Static PWA — no build step"
+    staticPublishPath: .
+    autoDeployTrigger: commit
     headers:
-      - path: /sw.js
+      - path: /service-worker.js
         name: Cache-Control
         value: no-cache
-      - path: /version.json
+      - path: /index.html
         name: Cache-Control
-        value: no-store
+        value: no-cache
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
-
-  # New same-origin PWA + passkey API. Its URL is the WebAuthn relying-party origin.
-  - type: web
-    name: hyrox-40-secure
-    runtime: node
-    plan: free
-    region: frankfurt
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
-    autoDeployTrigger: commit
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: APP_ORIGIN
-        value: https://hyrox-40-secure.onrender.com
-      - key: RP_ID
-        value: hyrox-40-secure.onrender.com
-      - key: DATABASE_URL
-        sync: false
-      - key: ADMIN_BOOTSTRAP_CODE
-        sync: false
-      - key: SMTP_URL
-        sync: false
-      - key: MAIL_FROM
-        sync: false
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
