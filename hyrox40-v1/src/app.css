@@ -41,3 +41,14 @@ body.app-entered .launch-screen{display:none}
 @keyframes launch-progress{0%{transform:translateX(-120%)}100%{transform:translateX(410%)}}
 @media(max-height:650px){.launch-logo{margin-bottom:22px}.launch-content h1{font-size:clamp(3.5rem,15vh,6rem)}.launch-progress{margin-top:20px}}
 @media(prefers-reduced-motion:reduce){.launch-grid,.launch-orbit,.launch-live-dot,.launch-progress span{animation:none!important}.launch-progress span{width:100%;opacity:.6}.launch-button{transition:none!important}}
+
+/* Today weekly focus hierarchy, accessible session progress, and next-action card */
+.hero-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.hero-header .week-label{margin:0}
+.hero-progress{margin-top:16px;padding-top:14px;border-top:1px solid #f5e50026}
+.hero-progress-header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:8px}
+.hero-progress-label{color:#ddddd4;font-size:.73rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.hero-progress-count{color:var(--yellow);font-size:.85rem;font-weight:850;font-variant-numeric:tabular-nums}
+.hero-progress-track{height:8px;margin:0 0 8px;background:#2b2b1d}
+.hero-progress-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;margin:0;color:var(--muted);font-size:.73rem;line-height:1.4}
+.next-action-card{border-color:#575300;background:linear-gradient(155deg,#191911,#131313)}
