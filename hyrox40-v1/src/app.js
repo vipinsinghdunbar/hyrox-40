@@ -7,7 +7,7 @@
   const NAV = ['today', 'plan', 'history', 'progress', 'profile'];
   const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   let config, view = 'today', currentSession = null, sessions = [], profile = null;
-  let measurements = [], calendar = {}, program = {}, nextMeasurementDate = '', selectedDate = '', selectedPlanId = '';
+  let measurements = [], calendar = {}, program = {}, nextMeasurementDate = '', selectedDate = '', selectedPlanId = '', planOffset = 0;
   let tickHandle = null, toastHandle = null, wakeLock = null;
 
   const localDateKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -74,25 +74,40 @@
   }
   function nextWorkoutCard(date,plan) {
     const status=displayStatus(date), s=sessionsForDate(date)[0];
+    const inProgress=Boolean(s&&![T.PHASE.FINISHED,T.PHASE.DISCARDED].includes(s.phase));
     const locked=isLockedPlan(plan);
-    let state=status==='completed'?'Completed':status==='missed'?'Not completed':s&&![T.PHASE.FINISHED,T.PHASE.DISCARDED].includes(s.phase)?'In progress':locked?'Coach review pending':'Planned';
+    const state=status==='completed'?'Completed':status==='missed'?'Not completed':inProgress?'In progress':locked?'Coach review pending':'Planned';
     const sub=`${fmtShortDate(date)} · ${plan.segments.length} sections${plan.rounds>1?` · ${plan.rounds} rounds`:''}`;
-    const action=s&&![T.PHASE.FINISHED,T.PHASE.DISCARDED].includes(s.phase)?`resume:${s.id}`:status==='completed'&&s?`resume:${s.id}`:`detail:${plan.id}:${date}`;
-    const label=s&&![T.PHASE.FINISHED,T.PHASE.DISCARDED].includes(s.phase)?'Resume workout':status==='completed'?'Review results':locked?'View draft session':'View workout';
+    const action=inProgress?`resume:${s.id}`:`detail:${plan.id}:${date}`;
+    const label=inProgress?'Resume active workout':'Open today’s session';
     const note=locked?'Draft template only. Coach review is required before it becomes a prescribed workout.':plan.segments[0]?.note||'A controlled baseline session. Enter actual results as you go.';
-    return `<article class="workout-card"><div><div class="workout-meta"><span class="pill pill-yellow">${esc(state)}</span><span class="pill">${esc(sub)}</span></div><h2>${esc(plan.title)}</h2><p class="muted small">${esc(note)}</p></div>${button(label,action,'button-primary','button-block')}</article>`;
+    const secondary=status==='completed'&&s?button('Review results',`resume:${s.id}`,'button-secondary'):(!locked&&status!=='completed'&&status!=='missed'?button('Not completed',`mark-missed:${date}`,'button-quiet'):'');
+    return `<article class="workout-card next-action-card" aria-labelledby="next-action-title"><div><p class="eyebrow">${esc(inProgress?'NEXT ACTION · WORKOUT IN PROGRESS':locked?'NEXT ACTION · DRAFT SESSION':'NEXT ACTION · TODAY’S SESSION')}</p><div class="workout-meta"><span class="pill pill-yellow">${esc(state)}</span><span class="pill">${esc(sub)}</span></div><h2 id="next-action-title">${esc(plan.title)}</h2><p class="muted small">${esc(note)}</p></div><div class="button-row">${button(label,action,'button-primary')}${secondary}</div></article>`;
   }
   function renderToday() {
     const target=nearestPlannedDate(), current=localDateKey(), todayPlan=planForDate(current), week=monday();
     const active=sessions.find(s=>![T.PHASE.FINISHED,T.PHASE.DISCARDED].includes(s.phase));
+    const plannedTotal=weekDates(week).filter(d=>Boolean(planForDate(iso(d)))).length||5;
     const done=completedThisWeek(week);
+    const clampedDone=Math.min(done,plannedTotal);
+    const progressPct=Math.round((clampedDone/plannedTotal)*100);
     const weekNo=programWeekNumber(current);
-    const weekFocus=`<section class="hero"><p class="week-label">${esc(weekNo===1?`BASELINE WEEK · ${done}/5 SESSIONS LOGGED`:phaseCycleLabel(current))}</p><h2 class="hero-focus">${esc(currentFocus(current))}</h2><p class="hero-note">${esc(currentFocusDescription(current))}</p></section>`;
+    const phaseBadge=weekNo===1?'Week 1 · Foundation / Baseline':`Week ${weekNo} · Coach review pending`;
+    const nextSummary=active?`Next action: Resume active workout (${planById(active.planDay)?.title||'Training session'})`:todayPlan?`Next action: Open today’s session (${todayPlan.title})`:target.plan?`Recovery day · Next session: ${target.plan.title}`:'Recovery day';
+    const weekFocus=`<section class="hero" aria-labelledby="weekly-focus-title"><div class="hero-header"><p class="week-label">WEEKLY FOCUS</p><span class="pill pill-yellow">${esc(phaseBadge)}</span></div><h2 id="weekly-focus-title" class="hero-focus">${esc(currentFocus(current))}</h2><p class="hero-note">${esc(currentFocusDescription(current))}</p><div class="hero-progress"><div class="hero-progress-header"><span id="weekly-sessions-label" class="hero-progress-label">Sessions logged</span><output id="weekly-sessions-count" class="hero-progress-count" aria-live="polite">${done} of ${plannedTotal} sessions logged</output></div><div class="progress-track hero-progress-track" role="progressbar" aria-labelledby="weekly-sessions-label" aria-label="Sessions logged this week" aria-valuemin="0" aria-valuemax="${plannedTotal}" aria-valuenow="${clampedDone}" aria-valuetext="${done} of ${plannedTotal} sessions logged (${progressPct}%)"><div class="progress-fill" style="width:${progressPct}%"></div></div><p class="hero-progress-meta"><span>${done}/${plannedTotal} completed this week (${progressPct}%)</span><span>${esc(nextSummary)}</span></p></div></section>`;
     let todayBlock;
-    if(active) todayBlock=`<div class="section-heading"><h2>Workout in progress</h2></div><article class="workout-card"><div><div class="workout-meta"><span class="pill pill-yellow">${esc(phaseName(active.phase))}</span></div><h2>${esc(planById(active.planDay)?.title||'Training session')}</h2><p class="muted small">${esc(active.date)} · Segment ${Math.min(active.segmentIndex+1,active.segments.length)} of ${active.segments.length}</p></div>${button('Resume workout',`resume:${active.id}`,'button-primary','button-block')}</article>`;
-    else if(todayPlan) todayBlock=`<div class="section-heading"><h2>Today's ${isLockedPlan(todayPlan)?'planned session':'workout'}</h2><a href="#plan" data-nav="plan">Full plan</a></div>${!isLockedPlan(todayPlan)&&displayStatus(current)!=='completed'&&displayStatus(current)!=='missed'?'<p class="tiny">Today’s workout hasn’t been logged.</p>':''}${nextWorkoutCard(current,todayPlan)}${!isLockedPlan(todayPlan)&&displayStatus(current)!=='completed'&&displayStatus(current)!=='missed'?`<div class="button-row" style="margin-top:9px">${button('Completed · record workout',`mark-completed:${current}`,'button-secondary')}${button('Not completed',`mark-missed:${current}`,'button-quiet')}</div>`:''}`;
-    else todayBlock=`<div class="section-heading"><h2>Today's focus</h2></div><div class="card card-dark"><h2>Recovery day</h2><p class="muted small">Your default five-day template leaves the weekend open for recovery. Adjust your schedule in a future plan update.</p>${target.plan?button(`Next: ${target.plan.title}`,`detail:${target.plan.id}:${target.date}`,'button-secondary','button-block'):''}</div>`;
-    return `${header('Today','Your training, saved on this device.')}${weekFocus}<div class="section-heading"><h2>This week</h2><a href="#plan" data-nav="plan">Open plan</a></div>${weekStrip()}${todayBlock}<section class="card details-card" style="margin-top:14px"><details><summary>Training and safety note</summary><div class="details-body">Training support only, not medical advice. The guide’s plan numbers are provisional pending qualified-coach review. Skip training if unwell; stop if you feel unwell or experience pain.</div></details></section>`;
+    if(active){
+      const activeTitle=planById(active.planDay)?.title||'Training session';
+      const segProgress=`Segment ${Math.min(active.segmentIndex+1,active.segments.length)} of ${active.segments.length}`;
+      todayBlock=`<div class="section-heading"><h2>Next action</h2><a href="#plan" data-nav="plan">Full plan</a></div><article class="workout-card next-action-card" aria-labelledby="next-action-title"><div><p class="eyebrow">NEXT ACTION · WORKOUT IN PROGRESS</p><div class="workout-meta"><span class="pill pill-yellow">${esc(phaseName(active.phase))}</span><span class="pill">${esc(segProgress)}</span><span class="pill">${esc(fmtShortDate(active.date))}</span></div><h2 id="next-action-title">${esc(activeTitle)}</h2><p class="muted small">Your timer and logged splits are saved locally on this device. Resume where you left off${todayPlan?' or open today’s session details':''}.</p></div><div class="button-row">${button('Resume active workout',`resume:${active.id}`,'button-primary')}${todayPlan?button('Open today’s session',`detail:${todayPlan.id}:${current}`,'button-secondary'):''}</div></article>`;
+    }else if(todayPlan){
+      todayBlock=`<div class="section-heading"><h2>Next action</h2><a href="#plan" data-nav="plan">Full plan</a></div>${nextWorkoutCard(current,todayPlan)}`;
+    }else{
+      const fallbackPlan=target.plan||config.baselineWeek[0];
+      const fallbackDate=target.date||current;
+      todayBlock=`<div class="section-heading"><h2>Next action</h2><a href="#plan" data-nav="plan">Full plan</a></div><article class="workout-card next-action-card" aria-labelledby="next-action-title"><div><p class="eyebrow">NEXT ACTION · RECOVERY DAY</p><div class="workout-meta"><span class="pill pill-yellow">Recovery</span><span class="pill">${esc(fmtShortDate(current))}</span></div><h2 id="next-action-title">Recovery &amp; next session preview</h2><p class="muted small">Your five-day schedule leaves the weekend open for recovery. Next planned workout: ${esc(fallbackPlan.title)} (${esc(fmtShortDate(fallbackDate))}).</p></div><div class="button-row">${button('Open today’s session',`detail:${fallbackPlan.id}:${fallbackDate}`,'button-secondary')}</div></article>`;
+    }
+    return `${header('Today','Your training, saved on this device.')}${weekFocus}${todayBlock}<div class="section-heading"><h2>This week</h2><a href="#plan" data-nav="plan">Open plan</a></div>${weekStrip()}<section class="card details-card" style="margin-top:14px"><details><summary>Training and safety note</summary><div class="details-body">Training support only, not medical advice. The guide’s plan numbers are provisional pending qualified-coach review. Skip training if unwell; stop if you feel unwell or experience pain.</div></details></section>`;
   }
   function dayCard(date,plan) {
     const key=iso(date), status=displayStatus(key), previous=sessionsForDate(key)[0];
