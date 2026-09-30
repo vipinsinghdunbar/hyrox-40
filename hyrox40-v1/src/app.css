@@ -2,3 +2,42 @@
 @media(min-width:600px){.screen{padding:27px 24px 120px}.app-header{padding-right:24px;padding-left:24px}.hero{padding:26px}.day-list{grid-template-columns:repeat(2,minmax(0,1fr))}.week-workout-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.week-workout-layout>.card{margin:0}}
 @media(max-width:360px){.screen{padding-right:12px;padding-left:12px}.card,.hero{padding:14px}.button-row{display:grid;grid-template-columns:minmax(0,1fr)}.field-grid,.equipment-list{grid-template-columns:minmax(0,1fr)}.day-card{grid-template-columns:48px minmax(0,1fr) auto;gap:8px}.calendar-grid{gap:3px}.calendar-day{min-height:64px;padding:6px 2px}.calendar-day .dow{font-size:.51rem}.nav-item{font-size:.58rem}.bottom-nav{padding-right:4px;padding-left:4px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Animated first-run landing screen. App controls stay inert until local initialization completes. */
+.app-shell{visibility:hidden}
+body.app-entered .app-shell{visibility:visible}
+.launch-screen{position:fixed;z-index:30;inset:0;display:grid;place-items:center;min-height:100svh;min-height:100dvh;overflow:hidden;padding:calc(28px + env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) calc(22px + env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));background:radial-gradient(ellipse at 75% 42%,#292800 0%,#14140d 27%,#0b0b0b 65%);}
+.launch-screen[hidden]{display:none}
+.launch-grid{position:absolute;inset:-30%;opacity:.12;background-image:linear-gradient(#f5e50022 1px,transparent 1px),linear-gradient(90deg,#f5e50022 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(120deg,transparent 8%,#000 55%,transparent 95%);transform:perspective(600px) rotateX(58deg) rotateZ(-23deg) scale(1.7);animation:launch-grid-drift 24s linear infinite}
+.launch-orbit{position:absolute;width:min(84vw,570px);aspect-ratio:1;border:1px solid #f5e50022;border-radius:50%;pointer-events:none}
+.launch-orbit-one{transform:translate(37%,-4%);animation:launch-orbit-pulse 5s ease-in-out infinite}
+.launch-orbit-two{width:min(62vw,420px);transform:translate(48%,-4%);border-color:#f5e50015;animation:launch-orbit-pulse 5s ease-in-out -2.5s infinite}
+.launch-content{position:relative;width:min(100%,560px);margin:auto;}
+.launch-logo{display:block;width:58px;height:58px;margin-bottom:clamp(32px,8vh,70px);border:1px solid #f5e50055;border-radius:16px;box-shadow:0 0 32px #f5e5001c}
+.launch-kicker{display:flex;align-items:center;gap:9px;margin:0 0 17px;color:#d1cd78;font-size:.66rem;font-weight:850;letter-spacing:.2em}
+.launch-live-dot{width:7px;height:7px;border-radius:50%;background:var(--yellow);box-shadow:0 0 12px #f5e500;animation:launch-dot 1.8s ease-in-out infinite}
+.launch-content h1{margin:0;font-size:clamp(4.2rem,18vw,8.6rem);font-weight:950;line-height:.78;letter-spacing:-.105em}
+.launch-content h1 span{color:var(--yellow)}
+.launch-copy{margin:23px 0 0;color:#c1c0b7;font-size:clamp(.9rem,3.8vw,1.08rem);letter-spacing:.015em}
+.launch-progress{width:min(230px,70%);height:2px;margin-top:36px;overflow:hidden;background:#353521}
+.launch-progress span{display:block;width:34%;height:100%;background:var(--yellow);box-shadow:0 0 12px #f5e500;animation:launch-progress 1.8s ease-in-out infinite}
+.launch-status{min-height:1.3em;margin:12px 0 0;color:#a5a497;font-size:.72rem;letter-spacing:.04em}
+.launch-actions{display:grid;gap:10px;width:min(100%,380px);margin-top:22px}
+.launch-actions[hidden]{display:none}
+.launch-button{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:56px;padding:0 18px;border:1px solid transparent;border-radius:13px;font:inherit;font-size:.88rem;font-weight:850;text-align:left;cursor:pointer;transition:transform .2s,background-color .2s,border-color .2s,opacity .2s}
+.launch-button:not(:disabled):hover{transform:translateY(-2px)}
+.launch-button:focus-visible{outline:3px solid #fff;outline-offset:4px}
+.launch-button:disabled{opacity:.48;cursor:wait}
+.launch-button-primary{background:var(--yellow);color:#10100a}
+.launch-button-secondary{border-color:#454532;background:#17170f;color:var(--ink)}
+.launch-button span{font-size:1.25rem}
+.launch-footer{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));margin:0;color:#77776e;font-size:.58rem;font-weight:800;letter-spacing:.19em}
+.launch-footer span{padding:0 5px;color:var(--yellow)}
+body.app-entered .launch-screen{display:none}
+.launch-screen.launch-ready .launch-progress span{width:100%;animation:none;opacity:.72}
+@keyframes launch-grid-drift{from{background-position:0 0,0 0}to{background-position:0 192px,192px 0}}
+@keyframes launch-orbit-pulse{0%,100%{opacity:.3;scale:.96}50%{opacity:.85;scale:1.035}}
+@keyframes launch-dot{0%,100%{opacity:.45;box-shadow:0 0 5px #f5e500}50%{opacity:1;box-shadow:0 0 15px #f5e500}}
+@keyframes launch-progress{0%{transform:translateX(-120%)}100%{transform:translateX(410%)}}
+@media(max-height:650px){.launch-logo{margin-bottom:22px}.launch-content h1{font-size:clamp(3.5rem,15vh,6rem)}.launch-progress{margin-top:20px}}
+@media(prefers-reduced-motion:reduce){.launch-grid,.launch-orbit,.launch-live-dot,.launch-progress span{animation:none!important}.launch-progress span{width:100%;opacity:.6}.launch-button{transition:none!important}}

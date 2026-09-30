@@ -361,20 +361,38 @@
   window.addEventListener('online',()=>{if($('connection-state'))$('connection-state').style.background='var(--green)';});
   window.addEventListener('offline',()=>{if($('connection-state'))$('connection-state').style.background='var(--yellow)';});
   document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'){if(currentSession&&currentSession.phase===T.PHASE.PLANNED_REST){const advanced=T.advance(currentSession,Date.now());if(advanced!==currentSession)await persistSession(advanced,false);}if(currentSession)requestWakeLock();}});
+  function enterApp(resumeActive=false){
+    document.body.classList.add('app-entered');
+    document.querySelector('.app-shell').setAttribute('aria-hidden','false');
+    document.querySelector('.bottom-nav').hidden=false;
+    view=resumeActive&&currentSession?'workout':'today';
+    render();
+    requestAnimationFrame(()=>screen.focus({preventScroll:true}));
+    if(currentSession&&resumeActive)requestWakeLock();
+  }
+  $('launch-enter').addEventListener('click',()=>enterApp(false));
+  $('launch-resume').addEventListener('click',()=>enterApp(true));
   async function init(){
     try{
       const response=await fetch('./hyrox40-plan-config.json');if(!response.ok)throw new Error('Plan config is missing.');config=await response.json();
       await repo.requestPersistentStorage();await refreshData();
-      document.querySelector('.bottom-nav').hidden=false;
       view=currentSession?(currentSession.phase===T.PHASE.FINISHED?'workout-summary':'workout'):'today';render();
+      const enterButton=$('launch-enter'),resumeButton=$('launch-resume'),actions=$('launch-actions');
+      if(currentSession){resumeButton.hidden=false;resumeButton.disabled=false;resumeButton.textContent='Resume active workout';}
+      enterButton.disabled=false;actions.hidden=false;
+      $('launch-status').textContent=currentSession?'Your saved workout is ready. Choose where to pick up.':'Your training space is ready.';
+      document.querySelector('.launch-screen').classList.add('launch-ready');
+      enterButton.focus({preventScroll:true});
       if('serviceWorker'in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
       tickHandle=setInterval(()=>{
         if(!currentSession)return;
         if(currentSession.phase===T.PHASE.PLANNED_REST){const next=T.advance(currentSession,Date.now());if(next!==currentSession)persistSession(next,false);}
         updateClock();
       },250);
-      if(currentSession)requestWakeLock();
-    }catch(error){screen.innerHTML=`<section class="card"><p class="eyebrow">SETUP ISSUE</p><h1 class="view-title">Could not load the app</h1><p class="muted">${esc(error.message)} Serve this folder on HTTPS or localhost. The app needs IndexedDB and its local plan config.</p></section>`;}
+    }catch(error){
+      $('launch-status').textContent=`Setup issue: ${error.message} Entry is disabled until setup is complete.`;
+      screen.innerHTML=`<section class="card"><p class="eyebrow">SETUP ISSUE</p><h1 class="view-title">Could not load the app</h1><p class="muted">${esc(error.message)} Serve this folder on HTTPS or localhost. The app needs IndexedDB and its local plan config.</p></section>`;
+    }
   }
   init();
 })();

@@ -33,3 +33,22 @@ test('plan draft stays visibly unapproved and does not prescribe sled weight', (
   assert.ok(sled.every(s => s.weightKg == null));
   assert.equal(config.targetRules.status, 'incomplete-pending-plan-config');
 });
+
+test('animated HYROX landing reuses the app logo and holds the app until entry', () => {
+  const js = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
+  assert.match(html, /id="launch-screen"/);
+  assert.match(html, /class="launch-logo" src="icon\.svg"/);
+  assert.match(html, /id="launch-enter"[^>]*disabled/);
+  assert.match(html, /id="launch-resume"[^>]*hidden disabled/);
+  assert.match(html, /class="app-shell" aria-hidden="true"/);
+  assert.match(css, /\.app-shell\{visibility:hidden\}/);
+  assert.match(js, /await repo\.requestPersistentStorage\(\);await refreshData\(\);[\s\S]*?enterButton\.disabled=false/);
+  assert.match(js, /resumeButton\.hidden=false;resumeButton\.disabled=false/);
+  assert.match(js, /function enterApp\(resumeActive=false\)/);
+});
+
+test('landing motion respects reduced-motion and exposes visible keyboard focus', () => {
+  assert.match(css, /@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.launch-grid[\s\S]*?animation:none!important/);
+  assert.match(css, /\.launch-button:focus-visible\{outline:/);
+  assert.match(html, /role="status" aria-live="polite"/);
+});
