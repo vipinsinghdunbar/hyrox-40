@@ -13,8 +13,26 @@
   <link rel="stylesheet" href="src/app.css">
   <title>HYROX 40 — Training</title>
 </head>
-<body>
-  <div class="app-shell">
+<body class="app-starting">
+  <section id="launch-screen" class="launch-screen" aria-labelledby="launch-title">
+    <div class="launch-grid" aria-hidden="true"></div>
+    <div class="launch-orbit launch-orbit-one" aria-hidden="true"></div>
+    <div class="launch-orbit launch-orbit-two" aria-hidden="true"></div>
+    <div class="launch-content">
+      <img class="launch-logo" src="icon.svg" alt="HYROX 40 logo">
+      <p class="launch-kicker"><span class="launch-live-dot" aria-hidden="true"></span> LOCAL TRAINING SYSTEM</p>
+      <h1 id="launch-title">BUILT FOR<br><span>THE NEXT</span><br>40.</h1>
+      <p class="launch-copy">Your training. Your data. On your device.</p>
+      <div class="launch-progress" aria-hidden="true"><span></span></div>
+      <p id="launch-status" class="launch-status" role="status" aria-live="polite" aria-atomic="true">Getting your training space ready…</p>
+      <div id="launch-actions" class="launch-actions" hidden>
+        <button id="launch-enter" class="launch-button launch-button-primary" type="button" disabled>Enter the app <span aria-hidden="true">↗</span></button>
+        <button id="launch-resume" class="launch-button launch-button-secondary" type="button" hidden disabled>Resume active workout <span aria-hidden="true">→</span></button>
+      </div>
+      <p class="launch-footer">HYROX 40 <span>·</span> LOCAL-FIRST TRAINING</p>
+    </div>
+  </section>
+  <div class="app-shell" aria-hidden="true">
     <header class="app-header">
       <a class="brand" href="#today" aria-label="HYROX 40 home"><span class="brand-mark">H</span><span><strong>HYROX 40</strong><small>TRAINING LOG</small></span></a>
       <div class="header-actions"><span id="connection-state" class="status-dot" aria-label="Local storage status" title="Local storage status"></span><button id="backup-shortcut" class="header-button" aria-label="Backup and restore">Backup</button></div>
