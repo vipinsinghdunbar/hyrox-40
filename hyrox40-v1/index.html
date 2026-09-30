@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0b0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Local-first HYROX training and performance log">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="src/app.css">
+  <title>HYROX 40 — Training</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="#today" aria-label="HYROX 40 home"><span class="brand-mark">H</span><span><strong>HYROX 40</strong><small>TRAINING LOG</small></span></a>
+      <div class="header-actions"><span id="connection-state" class="status-dot" aria-label="Local storage status" title="Local storage status"></span><button id="backup-shortcut" class="header-button" aria-label="Backup and restore">Backup</button></div>
+    </header>
+    <main id="screen" class="screen" tabindex="-1"></main>
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button data-view="today" class="nav-item active"><span class="nav-icon" aria-hidden="true">⌂</span><span>Today</span></button>
+      <button data-view="plan" class="nav-item"><span class="nav-icon" aria-hidden="true">▦</span><span>Plan</span></button>
+      <button data-view="history" class="nav-item"><span class="nav-icon" aria-hidden="true">≡</span><span>History</span></button>
+      <button data-view="progress" class="nav-item"><span class="nav-icon" aria-hidden="true">↗</span><span>Progress</span></button>
+      <button data-view="profile" class="nav-item"><span class="nav-icon" aria-hidden="true">◉</span><span>Profile</span></button>
+    </nav>
+  </div>
+  <dialog id="confirm-dialog"><form method="dialog"><h2>Discard this workout?</h2><p>Your session will be marked discarded.</p><div class="button-row"><button value="cancel" class="button button-secondary">Keep workout</button><button value="confirm" class="button button-danger">Discard</button></div></form></dialog>
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="src/timer-engine.js"></script>
+  <script src="src/storage.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

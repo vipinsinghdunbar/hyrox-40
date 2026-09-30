@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: hyrox40-v1
+    runtime: static
+    buildCommand: echo "Static PWA — no build step"
+    staticPublishPath: .
+    autoDeployTrigger: commit
+    headers:
+      - path: /service-worker.js
+        name: Cache-Control
+        value: no-cache
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
