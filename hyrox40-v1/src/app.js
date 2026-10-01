@@ -8,7 +8,7 @@
   const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   let config, view = 'today', currentSession = null, sessions = [], profile = null;
   let measurements = [], calendar = {}, program = {}, nextMeasurementDate = '', selectedDate = '', selectedPlanId = '', planOffset = 0;
-  let tickHandle = null, toastHandle = null, wakeLock = null;
+  let tickHandle = null, toastHandle = null, wakeLock = null, swUpdateHandled = false;
 
   const localDateKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const fromDateKey = key => { const [y,m,d] = key.split('-').map(Number); return new Date(y,m-1,d,12); };
@@ -333,7 +333,7 @@
     catch(error){showToast(error.message);}
   }
   async function exportBackup() {
-    try{const backup=await repo.exportAll(),blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`hyrox40-backup-${localDateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup exported.');}
+    try{const backup=await repo.exportAll(),blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`hyrox-backup-${localDateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast('Backup exported.');}
     catch(error){showToast(`Export failed: ${error.message}`);}
   }
   async function importBackup(file) {
@@ -392,6 +392,18 @@
     requestAnimationFrame(()=>screen.focus({preventScroll:true}));
     if(currentSession&&resumeActive)requestWakeLock();
   }
+  function registerServiceWorker() {
+    if(!('serviceWorker' in navigator)||(location.protocol!=='https:'&&location.hostname!=='localhost'))return;
+    const hadController=Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.register('./service-worker.js').then(registration=>registration.update().catch(()=>{})).catch(()=>{});
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(!hadController||swUpdateHandled)return;
+      swUpdateHandled=true;
+      const workoutInProgress=Boolean(currentSession)&&![T.PHASE.FINISHED,T.PHASE.DISCARDED].includes(currentSession.phase);
+      if(workoutInProgress){showToast('Update ready. It will apply the next time you open the app.');return;}
+      location.reload();
+    });
+  }
   $('launch-enter').addEventListener('click',()=>enterApp(false));
   $('launch-resume').addEventListener('click',()=>enterApp(true));
   async function init(){
@@ -405,7 +417,7 @@
       $('launch-status').textContent=currentSession?'Your saved workout is ready. Choose where to pick up.':'Your training space is ready.';
       document.querySelector('.launch-screen').classList.add('launch-ready');
       enterButton.focus({preventScroll:true});
-      if('serviceWorker'in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+      registerServiceWorker();
       tickHandle=setInterval(()=>{
         if(!currentSession)return;
         if(currentSession.phase===T.PHASE.PLANNED_REST){const next=T.advance(currentSession,Date.now());if(next!==currentSession)persistSession(next,false);}

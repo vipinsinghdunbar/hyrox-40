@@ -174,3 +174,132 @@ test('Today screen defines weekly focus hierarchy, accessible sessions-logged pr
   assert.match(recoveryHtml, /data-action="detail:run-intervals:2026-10-05">Open next session<\/button>/);
   assert.doesNotMatch(recoveryHtml, />Open today’s session<\/button>/);
 });
+
+test('the public product name is HYROX wherever users see it', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
+  const js = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
+  const storage = fs.readFileSync(path.join(root, 'src/storage.js'), 'utf8');
+  const sw = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+  assert.equal(manifest.name, 'HYROX — Local Training');
+  assert.equal(manifest.short_name, 'HYROX');
+  assert.match(html, /<title>HYROX — Training<\/title>/);
+  assert.match(html, /<meta name="apple-mobile-web-app-title" content="HYROX">/);
+  assert.match(html, /<strong>HYROX<\/strong>/);
+  assert.match(html, /alt="HYROX logo"/);
+  assert.match(html, /aria-label="HYROX home"/);
+  assert.doesNotMatch(pkg.description, /HYROX 40/);
+
+  for (const file of ['index.html', 'manifest.webmanifest', 'package.json', 'service-worker.js', 'src/app.js', 'src/storage.js', 'src/timer-engine.js']) {
+    assert.doesNotMatch(fs.readFileSync(path.join(root, file), 'utf8'), /HYROX 40/, `${file} still shows the old product name`);
+  }
+
+  // the exported backup filename is user-visible and renamed; the on-disk format identifier is not
+  assert.match(js, /a\.download=`hyrox-backup-\$\{localDateKey\(\)\}\.json`/);
+  assert.doesNotMatch(js, /hyrox40-backup/);
+  assert.match(storage, /format: 'hyrox40-local-backup'/);
+  assert.match(storage, /backup\.format !== 'hyrox40-local-backup'/);
+  assert.match(storage, /not a supported HYROX backup\./);
+});
+
+test('internal identifiers, deploy target and training content paths are unchanged', () => {
+  const js = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
+  const storage = fs.readFileSync(path.join(root, 'src/storage.js'), 'utf8');
+  const sw = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const render = fs.readFileSync(path.join(root, 'render.yaml'), 'utf8');
+
+  assert.equal(pkg.name, 'hyrox40-local-v1');
+  assert.match(storage, /const DB_NAME = 'hyrox40-local-v1';/);
+  assert.match(js, /fetch\('\.\/hyrox40-plan-config\.json'\)/);
+  assert.match(sw, /'\.\/hyrox40-plan-config\.json'/);
+  assert.match(render, /name: hyrox40-v1/);
+});
+
+test('installed PWAs receive the update: worker bytes change and the app reloads once on takeover', () => {
+  const js = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
+  const sw = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
+
+  const version = sw.match(/const CACHE = 'hyrox40-v(\d+\.\d+\.\d+)';/);
+  assert.ok(version, 'the service worker must declare a versioned hyrox40- cache');
+  const rank = value => value.split('.').reduce((total, part) => total * 1000 + Number(part), 0);
+  assert.ok(rank(version[1]) > rank('1.2.0'), 'the cache version must be bumped whenever shipped bytes change');
+
+  assert.match(sw, /k\.startsWith\('hyrox40-'\) && k !== CACHE/, 'stale hyrox40- caches must still be purged');
+  assert.match(sw, /self\.skipWaiting\(\)/, 'a new worker must activate without waiting for other tabs');
+  assert.match(js, /registration\.update\(\)/, 'the app must ask for a worker update on start');
+  assert.match(js, /addEventListener\('controllerchange'/, 'a takeover must be noticed so the page refreshes');
+  assert.match(js, /swUpdateHandled/, 'the refresh must be one-shot to avoid reload loops');
+});
+
+function createServiceWorkerHarness({ existingCaches = [], fetchImpl } = {}) {
+  const vm = require('node:vm');
+  const script = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
+  const listeners = {};
+  const cachesMap = new Map(existingCaches.map(name => [name, new Set(['./index.html', './manifest.webmanifest'])]));
+  const self = {
+    location: { origin: 'https://hyrox-40-secure.onrender.com' },
+    addEventListener: (type, fn) => { listeners[type] = fn; },
+    skipWaiting: async () => { self.skippedWaiting = true; },
+    clients: { claim: async () => { self.claimedClients = true; } },
+  };
+  const urlOf = request => request.url || String(request);
+  const caches = {
+    open: async name => {
+      const set = cachesMap.get(name) || new Set();
+      cachesMap.set(name, set);
+      return {
+        addAll: async urls => urls.forEach(url => set.add(url)),
+        put: async request => set.add(urlOf(request)),
+        match: async request => (set.has(urlOf(request)) ? { cached: urlOf(request) } : undefined),
+      };
+    },
+    keys: async () => [...cachesMap.keys()],
+    delete: async name => cachesMap.delete(name),
+    match: async request => {
+      for (const set of cachesMap.values()) if (set.has(urlOf(request))) return { cached: urlOf(request) };
+      return undefined;
+    },
+  };
+  vm.runInNewContext(script, { self, caches, URL, fetch: fetchImpl });
+  return { listeners, cachesMap, self };
+}
+
+test('service-worker lifecycle refreshes an installed app and purges the superseded brand cache', async () => {
+  const { listeners, cachesMap, self } = createServiceWorkerHarness({ existingCaches: ['hyrox40-v1.2.0'] });
+
+  const install = [];
+  listeners.install({ waitUntil: promise => install.push(promise) });
+  await Promise.all(install);
+  assert.equal(self.skippedWaiting, true, 'a new worker must activate immediately');
+
+  const current = [...cachesMap.keys()].filter(name => name.startsWith('hyrox40-') && name !== 'hyrox40-v1.2.0');
+  assert.equal(current.length, 1, 'exactly one new versioned cache must be precached');
+  const cached = cachesMap.get(current[0]);
+  for (const file of ['./index.html', './manifest.webmanifest', './src/app.js', './src/storage.js']) {
+    assert.ok(cached.has(file), `${file} must be precached so the rename reaches installed apps`);
+  }
+
+  const activate = [];
+  listeners.activate({ waitUntil: promise => activate.push(promise) });
+  await Promise.all(activate);
+  assert.equal(self.claimedClients, true, 'the new worker must take over open clients');
+  assert.ok(!cachesMap.has('hyrox40-v1.2.0'), 'the pre-rename cache must be deleted so old names cannot be served');
+});
+
+test('a navigation never stays pinned to the old shell but still loads offline', async () => {
+  const navigation = { method: 'GET', mode: 'navigate', url: 'https://hyrox-40-secure.onrender.com/' };
+  const onlineCalls = [];
+  const online = createServiceWorkerHarness({ fetchImpl: async request => { onlineCalls.push(request); return { ok: true, clone: () => ({ ok: true, copy: true }) }; } });
+  let onlineResponse;
+  online.listeners.fetch({ request: navigation, respondWith: promise => { onlineResponse = promise; } });
+  assert.equal(onlineCalls.length, 1, 'a navigation must try the network first, so a cached old shell cannot win');
+  assert.equal((await onlineResponse).ok, true, 'the fresh network shell must be used');
+
+  const offline = createServiceWorkerHarness({ existingCaches: ['hyrox40-v1.3.0'], fetchImpl: async () => { throw new Error('offline'); } });
+  offline.cachesMap.get('hyrox40-v1.3.0').add(navigation.url);
+  let offlineResponse;
+  offline.listeners.fetch({ request: navigation, respondWith: promise => { offlineResponse = promise; } });
+  assert.equal((await offlineResponse).cached, navigation.url, 'offline launches must still resolve to the cached shell');
+});

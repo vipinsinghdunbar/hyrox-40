@@ -1,4 +1,6 @@
-# HYROX 40 v1 — local-first training prototype
+# HYROX v1 — local-first training prototype
+
+The public-facing product name is **HYROX**. Internal identifiers intentionally keep their `hyrox40` form and must not be renamed: the `hyrox40-v1/` folder, the `hyrox40-local-v1` IndexedDB database, the `hyrox40-local-backup` backup format, the `hyrox40-plan-config.json` filename, the GitHub repository name, and the existing Render URL. PWA cache keys also keep the `hyrox40-` prefix so superseded caches are still cleaned up, but the cache version is bumped on every shipped change so installed apps update.
 
 This clean project is separate from the older account-enabled app. It follows the static, offline-first iPhone PWA direction: no backend, account, analytics, or external script. Workout data is stored in the browser's IndexedDB.
 
