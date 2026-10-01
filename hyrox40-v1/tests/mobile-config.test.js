@@ -187,6 +187,7 @@ test('the public product name is HYROX wherever users see it', () => {
   assert.match(html, /<title>HYROX — Training<\/title>/);
   assert.match(html, /<meta name="apple-mobile-web-app-title" content="HYROX">/);
   assert.match(html, /<strong>HYROX<\/strong>/);
+  assert.match(html, /<h1 id="launch-title">BUILT FOR<br><span>THE NEXT<\/span><br>RACE\.<\/h1>/, 'the launch tagline must not keep the old "40" brand motif');
   assert.match(html, /alt="HYROX logo"/);
   assert.match(html, /aria-label="HYROX home"/);
   assert.doesNotMatch(pkg.description, /HYROX 40/);
