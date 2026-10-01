@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'hyrox40-v1.1.0';
+const CACHE = 'hyrox40-v1.2.0';
 const FILES = [
   './', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png',
   './hyrox40-plan-config.json', './src/app.css', './src/app.js', './src/storage.js', './src/timer-engine.js'
