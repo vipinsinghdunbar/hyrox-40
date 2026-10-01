@@ -1,4 +1,4 @@
-/* HYROX 40 local timer engine. Pure timestamp-based state transitions; no server or dependencies. */
+/* HYROX local timer engine. Pure timestamp-based state transitions; no server or dependencies. */
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

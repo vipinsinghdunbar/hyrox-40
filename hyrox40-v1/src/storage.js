@@ -116,7 +116,7 @@
       },
       async importAll(backup) {
         if (!backup || backup.format !== 'hyrox40-local-backup' || ![1, 2].includes(backup.version) || !Array.isArray(backup.sessions)) {
-          throw new Error('This backup file is not a supported HYROX 40 backup.');
+          throw new Error('This backup file is not a supported HYROX backup.');
         }
         if (backup.sessions.some(s => !s || typeof s.id !== 'string' || !Array.isArray(s.segments))) throw new Error('The backup contains an invalid workout.');
         if (backup.version === 2 && (backup.metadata == null || typeof backup.metadata !== 'object' || Array.isArray(backup.metadata))) throw new Error('The backup metadata is invalid.');

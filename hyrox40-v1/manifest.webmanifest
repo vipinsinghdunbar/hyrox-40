@@ -1,6 +1,6 @@
 {
-  "name": "HYROX 40 — Local Training",
-  "short_name": "HYROX 40",
+  "name": "HYROX — Local Training",
+  "short_name": "HYROX",
   "description": "Local-first HYROX training, workout timers and performance log",
   "start_url": "./",
   "scope": "./",
