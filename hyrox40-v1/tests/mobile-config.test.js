@@ -61,11 +61,12 @@ test('Today screen defines weekly focus hierarchy, accessible sessions-logged pr
   assert.match(js, /aria-labelledby="weekly-focus-title"/);
   assert.match(js, /<p class="week-label">WEEKLY FOCUS<\/p>/);
   assert.match(js, /id="weekly-sessions-count"[^>]*aria-live="polite"/);
-  assert.match(js, /role="progressbar"[^>]*aria-labelledby="weekly-sessions-label"[^>]*aria-valuemin="0"[^>]*aria-valuemax="\$\{plannedTotal\}"[^>]*aria-valuenow="\$\{clampedDone\}"/);
+  assert.match(js, /role="progressbar"[^>]*aria-labelledby="weekly-sessions-label"[^>]*aria-describedby="weekly-sessions-summary"[^>]*aria-valuemin="0"[^>]*aria-valuemax="\$\{plannedTotal\}"[^>]*aria-valuenow="\$\{clampedDone\}"/);
   assert.match(js, /Resume active workout/);
   assert.match(js, /Open today’s session/);
   assert.match(css, /\.hero-progress/);
   assert.match(css, /\.next-action-card/);
+  assert.match(css, /\.next-action-button/);
 
   async function renderTodayInSandbox({ sessions = [], calendar = {}, fixedDate = new Date(2026, 8, 30, 12, 0, 0) } = {}) {
     const elements = new Map();
@@ -140,9 +141,11 @@ test('Today screen defines weekly focus hierarchy, accessible sessions-logged pr
   assert.match(idleHtml, /<p class="week-label">WEEKLY FOCUS<\/p>/);
   assert.match(idleHtml, /<h2 id="weekly-focus-title" class="hero-focus">Baseline &amp; movement quality<\/h2>/);
   assert.match(idleHtml, /0 of 5 sessions logged/);
-  assert.match(idleHtml, /role="progressbar"[^>]*aria-valuemin="0"[^>]*aria-valuemax="5"[^>]*aria-valuenow="0"/);
+  assert.match(idleHtml, /role="progressbar"[^>]*aria-describedby="weekly-sessions-summary"[^>]*aria-valuemin="0"[^>]*aria-valuemax="5"[^>]*aria-valuenow="0"/);
   assert.match(idleHtml, /class="progress-fill" style="width:0%"/);
-  assert.match(idleHtml, /data-action="detail:sled-baseline:2026-09-30">Open today’s session<\/button>/);
+  assert.match(idleHtml, /id="weekly-sessions-summary"[^>]*><span>0% complete<\/span><span>5 sessions remaining this week<\/span>/);
+  assert.match(idleHtml, /class="calendar-day today [^"]*" aria-current="date"/);
+  assert.match(idleHtml, /class="button button-primary next-action-button" data-action="detail:sled-baseline:2026-09-30">Open today’s session<\/button>/);
 
   const activeSession = T.startSession(
     T.createSession({ id: 'active-1', date: '2026-09-30', planDay: 'sled-baseline', segments: config.baselineWeek[2].segments }, 1000),
@@ -158,6 +161,16 @@ test('Today screen defines weekly focus hierarchy, accessible sessions-logged pr
   assert.match(activeHtml, /2 of 5 sessions logged/);
   assert.match(activeHtml, /role="progressbar"[^>]*aria-valuemin="0"[^>]*aria-valuemax="5"[^>]*aria-valuenow="2"/);
   assert.match(activeHtml, /class="progress-fill" style="width:40%"/);
-  assert.match(activeHtml, /data-action="resume:active-1">Resume active workout<\/button>/);
+  assert.match(activeHtml, /id="weekly-sessions-summary"[^>]*><span>40% complete<\/span><span>3 sessions remaining this week<\/span>/);
+  assert.match(activeHtml, /class="button button-primary next-action-button" data-action="resume:active-1">Resume active workout<\/button>/);
   assert.match(activeHtml, /data-action="detail:sled-baseline:2026-09-30">Open today’s session<\/button>/);
+
+  const recoveryHtml = await renderTodayInSandbox({
+    fixedDate: new Date(2026, 9, 3, 12, 0, 0),
+    calendar: { '2026-10-03': { status: 'completed' } },
+  });
+  assert.match(recoveryHtml, /0 of 5 sessions logged/, 'a recovery-day status must not inflate planned-session progress');
+  assert.match(recoveryHtml, /NEXT ACTION · RECOVERY DAY/);
+  assert.match(recoveryHtml, /data-action="detail:run-intervals:2026-10-05">Open next session<\/button>/);
+  assert.doesNotMatch(recoveryHtml, />Open today’s session<\/button>/);
 });
